@@ -8,8 +8,14 @@
     "client": "cd client && npm run start",
     "server": "npx nodemon server.js",
     "dev": "concurrently --kill-others-on-fail 'npm:server' 'npm:client'",
-    "heroku-postbuild": "npm run build"
+    "start": "node backend/server.js",
+    "heroku-postbuild": "NPM_CONFIG_PRODUCTION=false npm install npm && run build"
+    
   },
+  
+"engines": {
+    "node": "10.16.0"
+},
   "author": "",
   "license": "ISC",
   "dependencies": {
