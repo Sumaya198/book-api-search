@@ -1,80 +1,77 @@
-import React, { Component } from "react";
-import BookCard from "../components/BookCard";
-import Rows from "../components/Rows";
-import SearchForm from "../components/SearchForm";
-import Jumbotron from "../components/Jumbotron";
-import API from "../utils/API";
+import {useState} from 'react'; 
+import { Container, Row, Col } from 'reactstrap';
 
-class Search extends Component {
 
-    state = {
-        search: "",
-        results: []
-        };
 
-    // on page load, 
-    componentDidMount() {
-        console.log("Mounted");
-        this.searchBooks("Steve Harvey");
+const Search = () => {
+    const [ data, setData] =  useState([])
+    const [ text, setText] = useState();
+    const type = (evt) => {
+        setText(evt.target.value)
+    }
+    const click = async () => {
+        setText(text)
+        let response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${text}`)
+        response = await response.json()
+        setData(response.items)
     }
 
-    searchBooks = query => {
-        API.search(query)
-            .then(res => this.setState({results:res.data.items})).then(console.log(this.state.results))
-            .catch(err => console.log(err));
+    const save = (booktitle, bookauthors, bookimage, bookdescription, booklink) => {
+        const books = {
+            authors : bookauthors,
+            description : bookdescription,
+            image : bookimage,
+            link :  booklink,
+            title : booktitle,
+        }
+        fetch('/api/books', {
+            method: 'POST',
+            
+            body: JSON.stringify({books}),
+        })
+        .then(response => response.json())
+        .then(res => {
+            setData(res)
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });   
     }
-
-    // on Save click,
-    handleSaveClick = event => {
-    
-        const bookInfo = event;
-        console.log(bookInfo);
-    // save to the database
-      API.saveBook(bookInfo)
-        .then(res => console.log(res))
-        .catch(err => console.log(err));
-    }
-
-    handleInputChange = event => {
-        const name = event.target.name;
-        const value = event.target.value;
-        this.setState({
-            [name]:value
-        });
-    }
-
-    handleFormSubmit = event => {
-        event.preventDefault();
-        this.searchBooks(this.state.search);
-    }
-
-    render() {
-        return (
-            <div className="container-fluid">
-                <Jumbotron />
-                <Rows>
-                <SearchForm 
-                    search={this.state.search}
-                    handleFormSubmit={this.handleFormSubmit}
-                    handleInputChange={this.handleInputChange}
-                />
-                </Rows>
-                <Rows >
-                    {this.state.results.map(book => ( 
-                        <BookCard
-                            id={book.id} 
-                            key={book.id} 
-                            title={book.volumeInfo.title} 
-                            description={book.volumeInfo.description} 
-                            image={book.volumeInfo.imageLinks.thumbnail} 
-                            link={book.volumeInfo.infoLink} 
-                            handleSaveClick={this.handleSaveClick}
-                        />
-                    ))}
-                </Rows>
+    return(
+        <div>
+            <div id = "book">
+                <h3>Book Search</h3>
+                <p>Books</p>
+                 <input type = "text" onChange = {type}/>
+                 <button id = "search" onClick = {() => click()}>Search</button>
             </div>
-        )
-    }
+
+           { data.length > 0 && (<div id = "results">
+                <h3>Results</h3>
+                    {data.map((name) => {
+                        return(
+                            <div key = {name.id}>
+                                <Container>
+                                    <Row>
+                                        <Col md = "10"><h4>{name.volumeInfo.title}</h4></Col>
+                                        <Col md = "2"><button><a href = {name.selfLink}  target="_blank" rel="noreferrer">View</a></button> <button onClick = {() => save(name.volumeInfo.title,name.volumeInfo.authors,name.volumeInfo.imageLinks.thumbnail,name.volumeInfo.description,name.selfLink)}>Save</button></Col>
+                                    </Row>
+                                </Container>
+                                            <p id = "author">Written by {name.volumeInfo.authors}</p>
+                                <div key = {name.id}>
+                                    <Container>
+                                        <Row> 
+                                            <Col md = "2"><img src = {name.volumeInfo.imageLinks.thumbnail} alt ={`${name.volumeInfo.title} book`}/></Col>
+                                            <Col md = "10"><p id = "description">{name.volumeInfo.description}</p></Col>
+                                        </Row>
+                                    </Container>
+                                </div>
+                            </div>)
+                    })}
+            </div>)}
+        </div>
+    )
 }
 
 export default Search;
+ 
